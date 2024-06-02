@@ -1,24 +1,48 @@
 name: Calculate Sphere Volume
 
-on:
-  push:
-    branches:
-      - main  
+on: [push, pull_request]
 
 jobs:
-  calculate_volume:
-    runs-on: ubuntu-latest
+
+  Foo-CI:
+
+    name: Python - ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 5
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.9]
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: 3.8
+          activate-environment: foo-exercise
 
-      
+      - name: Build conda environment and run tests
+        shell: bash -l {0}
+        run: |
 
-      - name: Run Python script
-        run: python main.py
+          echo " "
+          echo "Installing conda environment"
+          echo " "
+          cd $RUNNER_WORKSPACE/
+          cd foo_parameterization/
+          $CONDA/bin/conda env update -f environment.yml -n foo-env
+
+          echo " "
+          echo "Installing foo_parameterization package"
+          echo " "
+          sudo python setup.py develop
+
+          echo " "
+          echo "Testing package installation"
+          echo " "
+          python -c "import foo_parameterization; print('Path: ' + foo_parameterization.__path__[0])"
+
+          echo " "
+          echo "The conda environment being used:"
+          echo " "
+          $CONDA/bin/conda env export
